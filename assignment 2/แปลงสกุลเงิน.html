@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Converter - Assignment 2</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        input, select, button {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        input {
+            flex-grow: 1;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+        }
+        .btn-clear { background-color: #ff4757; color: white; }
+        .btn-clear:hover { background-color: #ff6b81; }
+        
+        .time-text { font-size: 14px; color: #555; }
+        .history-box { margin-top: 30px; border-top: 2px solid #eee; padding-top: 15px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>โปรแกรมแปลงสกุลเงิน</h2>
+    
+    <p class="time-text" id="last-update">เวลาที่อัปเดตอัตราแลกเปลี่ยน: ......</p>
+
+    <div class="input-group">
+        <input type="number" id="amount-one" placeholder="จำนวนเงินต้นทาง" min="0">
+        <select id="currency-one">
+            <option value="THB" selected>THB</option>
+            <option value="USD">USD</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <input type="number" id="amount-two" placeholder="จำนวนเงินปลายทาง" min="0">
+        <select id="currency-two">
+            <option value="USD" selected>USD</option>
+            <option value="THB">THB</option>
+        </select>
+    </div>
+
+    <button class="btn-clear" id="clear-data-btn">ล้างข้อมูล</button>
+
+    <div class="history-box">
+        <h3>ประวัติการแปลงเงิน (10 รายการล่าสุด)</h3>
+        <ul id="history-list">
+        </ul>
+        <button class="btn-clear" id="clear-history-btn">ล้างประวัติ</button>
+    </div>
+</div>
+
+<script>
+    const amountOne = document.getElementById('amount-one');
+    const amountTwo = document.getElementById('amount-two');
+    const currencyOne = document.getElementById('currency-one');
+    const currencyTwo = document.getElementById('currency-two');
+    
+    const lastUpdate = document.getElementById('last-update');
+    const clearDataBtn = document.getElementById('clear-data-btn');
+    const historyList = document.getElementById('history-list');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+
+    let histories = [];
+    
+    const rate_THB_to_USD = 0.028;
+    const rate_USD_to_THB = 35.71;
+
+    function updateTime() {
+        const now = new Date();
+        lastUpdate.innerText = `เวลาที่อัปเดตข้อมูลล่าสุด: ${now.toLocaleString('th-TH')}`;
+    }
+
+    function calculate() {
+        const curr1 = currencyOne.value;
+        const curr2 = currencyTwo.value;
+        
+        if (amountOne.value === '') {
+            amountTwo.value = '';
+            return;
+        }
+
+        let rate = 1;
+        if (curr1 === "THB" && curr2 === "USD") rate = rate_THB_to_USD;
+        else if (curr1 === "USD" && curr2 === "THB") rate = rate_USD_to_THB;
+
+        const result = (amountOne.value * rate).toFixed(2);
+        amountTwo.value = result;
+    }
+
+    function calculateReverse() {
+        const curr1 = currencyOne.value;
+        const curr2 = currencyTwo.value;
+        
+        if (amountTwo.value === '') {
+            amountOne.value = '';
+            return;
+        }
+
+        let rate = 1;
+        if (curr2 === "USD" && curr1 === "THB") rate = rate_USD_to_THB;
+        else if (curr2 === "THB" && curr1 === "USD") rate = rate_THB_to_USD;
+
+        const result = (amountTwo.value * rate).toFixed(2);
+        amountOne.value = result;
+    }
+
+    function saveHistory(fromAmount, fromCurr, toAmount, toCurr) {
+        if (!fromAmount || !toAmount) return;
+
+        const text = `${fromAmount} ${fromCurr} → ${toAmount} ${toCurr}`;
+        
+        histories.unshift(text);
+
+        if (histories.length > 10) {
+            histories.pop(); 
+        }
+
+        renderHistory();
+    }
+
+    function renderHistory() {
+        historyList.innerHTML = '';
+        histories.forEach(item => {
+            const li = document.createElement('li');
+            li.innerText = item;
+            historyList.appendChild(li);
+        });
+    }
+
+
+    amountOne.addEventListener('input', calculate);
+    
+    amountTwo.addEventListener('input', calculateReverse);
+
+    amountOne.addEventListener('change', () => {
+        saveHistory(amountOne.value, currencyOne.value, amountTwo.value, currencyTwo.value);
+    });
+    amountTwo.addEventListener('change', () => {
+        saveHistory(amountTwo.value, currencyTwo.value, amountOne.value, currencyOne.value);
+    });
+
+    currencyOne.addEventListener('change', calculate);
+    currencyTwo.addEventListener('change', calculate);
+
+    clearDataBtn.addEventListener('click', () => {
+        amountOne.value = '';
+        amountTwo.value = '';
+        currencyOne.value = 'THB';
+        currencyTwo.value = 'USD';
+        updateTime();
+    });
+
+    clearHistoryBtn.addEventListener('click', () => {
+        histories = [];
+        renderHistory();
+    });
+
+    updateTime();
+
+</script>
+</body>
+</html>
